@@ -5,8 +5,8 @@ import { RegisterDto, LoginDto } from './dtos/auth.dto';
 
 // Ganti: const AUTH_API_URL = 'http://localhost:3001/auth';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-const API_URL = `${API_BASE_URL}/auth`;
+// Deklarasi AUTH_API_URL dari environment variable
+const AUTH_API_URL = process.env.NEXT_PUBLIC_AUTH_API_URL || 'https://api-production-042c.up.railway.app';
 
 // --- Interface untuk Respons ---
 interface AuthResponse {
