@@ -1,4 +1,9 @@
-// Export semua types di sini
-export * from './src/types';
-// atau
-export type { YourType } from './src/types';
+// packages/types/index.ts
+export interface Brief {
+  id: string;
+  title: string;
+  description: string;
+  // ... fields lainnya
+}
+
+// Export semua types yang dibutuhkan
