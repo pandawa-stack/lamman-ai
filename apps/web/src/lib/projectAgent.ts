@@ -1,11 +1,11 @@
 // File: apps/web/src/lib/projectAgent.ts
 
 import axios from 'axios';
-import { CreateProjectDto } from './dtos/project.dto'; // Kita buat type-nya inline saja biar cepat atau import dari store
 
-//Ganti: const API_URL = 'http://localhost:3001/projects';
+// HAPUS baris import CreateProjectDto yang error
+// import { CreateProjectDto } from './dtos/project.dto';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api-production-042c.up.railway.app';
 const API_URL = `${API_BASE_URL}/projects`;
 
 // Helper untuk mengambil Token dari LocalStorage
@@ -58,8 +58,8 @@ export const publishProjectAgent = async (id: string, slug: string) => {
 
 // 6. Fetch Public Site (Tanpa Login - Akses Publik)
 export const fetchPublicSiteAgent = async (slug: string) => {
-    // URL Backend: http://localhost:3001/sites/:slug
-    const url = `http://localhost:3001/sites/${slug}`; 
+    // URL Backend
+    const url = `${API_BASE_URL}/sites/${slug}`; 
     
     // ✅ PERBAIKAN: Gunakan native fetch()
     const response = await fetch(url, { 
