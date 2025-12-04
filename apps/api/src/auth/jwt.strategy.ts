@@ -2,28 +2,40 @@
 
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common'; // Tambah Logger
 import { ConfigService } from '@nestjs/config';
 
-// Interface untuk payload JWT
 export interface JwtPayload {
   email: string;
-  sub: string; // User ID
+  sub: string;
 }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private configService: ConfigService) {
+  private readonly logger = new Logger(JwtStrategy.name);
+
+  constructor(configService: ConfigService) {
+    // 1. Coba ambil secret
+    const secret = configService.get<string>('JWT_SECRET');
+
+    // 2. LOGGING DEBUG (Cek log Railway nanti)
+    if (!secret) {
+      console.error('🚨 CRITICAL: JWT_SECRET is NOT defined in Environment Variables!');
+      console.log('Current Env Keys:', Object.keys(process.env)); // Intip env apa saja yang ada
+    } else {
+      console.log('✅ JWT_SECRET is successfully loaded.');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET'), // Mengambil secret dari .env
+      // 3. FALLBACK: Gunakan string acak jika kosong agar server TIDAK CRASH loop
+      // (Tapi login akan error 401 jika env asli tidak masuk)
+      secretOrKey: secret || 'temporary_fallback_secret_to_prevent_crash',
     });
   }
 
-  // Fungsi validate ini dipanggil setiap kali token dikirim (kecuali rute publik)
   async validate(payload: JwtPayload) {
-    // Kita hanya perlu mengembalikan payload karena token sudah divalidasi oleh Passport
     return { userId: payload.sub, email: payload.email };
   }
 }
