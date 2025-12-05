@@ -7,11 +7,12 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Daftar Origins yang diizinkan (untuk Vercel dan lokal)
+  // Daftar Origins yang diizinkan
   const allowedOrigins = [
     'http://localhost:3000',           // Frontend Development (Lokal)
-    'https://lamman.app',              // ✅ Domain Produksi Utama Anda
-    /(\.vercel\.app)$/,                // ✅ Mengizinkan semua preview domain Vercel
+    'https://lamman.app',              // ✅ Domain Utama
+    'https://www.lamman.app',          // ✅ Domain Utama (www)
+    /(\.vercel\.app)$/,                // ✅ Semua preview domain Vercel
   ];
 
   // 1. Enable CORS (Dengan Origin Spesifik & Credentials)
@@ -24,8 +25,11 @@ async function bootstrap() {
   // 2. Enable Validasi DTO
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
-  // 3. Jalankan di PORT 3001 (menggunakan env var dari Railway)
-  await app.listen(process.env.PORT || 3001);
+  // 3. Jalankan Server
+  // PENTING: Bind ke '0.0.0.0' agar bisa diakses dari luar container Railway
+  const port = process.env.PORT || 3001;
+  await app.listen(port, '0.0.0.0');
+  
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap();
