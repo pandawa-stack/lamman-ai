@@ -1,15 +1,17 @@
 // File: apps/web/src/lib/ApiAgent.ts
 
 import axios from 'axios';
-import { Brief, Design, Voice, LandingCopy, Layout } from '@repo/types'; // Import dari packages/types
+import { Brief, Design, Voice, LandingCopy, Layout } from '@repo/types';
 
-// URL Backend NestJS
-// GANTI: const API_URL = 'http://localhost:3001/ai';
-// JADI:
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+// 1. AMBIL BASE URL & BERSIHKAN (Hapus trailing slash jika ada)
+const rawBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+const API_BASE_URL = rawBaseUrl.replace(/\/$/, ''); // Regex untuk hapus '/' di akhir
+
+// 2. RAKIT URL API AI
 const API_URL = `${API_BASE_URL}/ai`;
 
-// --- Interface untuk data yang akan dikirim ke Backend ---
+console.log("🚀 API Configured to:", API_URL); // Debugging Log
+
 interface GenerateCopyPayload {
     brief: Brief;
     voice: Voice;
@@ -20,45 +22,39 @@ interface GenerateHtmlPayload {
     design: Design;
     voice: Voice;
     copy: LandingCopy;
-    layout: Layout; // Layout adalah string di store
+    layout: Layout;
 }
 
-// 1. Panggilan API untuk GENERATE COPY (Teks)
+// 3. Generate Copy
 export const generateCopyAgent = async (payload: GenerateCopyPayload): Promise<LandingCopy> => {
     try {
-        console.log('Agent: Sending generate-copy request to Backend...');
+        console.log(`Agent: POST request to ${API_URL}/generate-copy`);
         
-        // Kita expect response berupa JSON objek LandingCopy
         const response = await axios.post<LandingCopy>(
             `${API_URL}/generate-copy`, 
             payload
         );
         
-        console.log('Agent: Copy received successfully.');
         return response.data;
     } catch (error) {
-        console.error('Agent Error: Failed to generate copy.', error);
+        console.error('Agent Error Copy:', error);
         throw error;
     }
 };
 
-// 2. Panggilan API untuk GENERATE HTML (Markah Akhir)
+// 4. Generate HTML
 export const generateHtmlAgent = async (payload: GenerateHtmlPayload): Promise<string> => {
     try {
-        console.log('Agent: Sending generate-html request to Backend...');
+        console.log(`Agent: POST request to ${API_URL}/generate-html`);
         
-        // Kita expect response berupa JSON objek { html: "..." }
         const response = await axios.post<{ html: string }>( 
-            `${API_URL}/generate-html`, // Endpoint Backend untuk HTML
+            `${API_URL}/generate-html`, 
             payload
         );
         
-        console.log('Agent: HTML received successfully.');
-        
-        // 🚨 FIX: Kita ambil properti 'html' dari objek JSON
         return response.data.html; 
     } catch (error) {
-        console.error('Agent Error: Failed to generate HTML.', error);
+        console.error('Agent Error HTML:', error);
         throw error;
     }
 };
