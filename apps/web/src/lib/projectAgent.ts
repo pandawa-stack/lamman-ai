@@ -1,24 +1,27 @@
 // File: apps/web/src/lib/projectAgent.ts
 import axios from 'axios';
 
-// ✅ STANDARDISASI URL
-const rawBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api-production-042c.up.railway.app';
+// ✅ STANDARDISASI URL BACKEND (AMAN UNTUK CLIENT & SERVER)
+const rawBaseUrl =
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  'https://api-production-042c.up.railway.app';
+
 const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
 const PROJECT_URL = `${API_BASE_URL}/projects`;
 
-// 🔍 DEBUG LOG (bisa dihapus setelah production stabil)
+// 🔍 DEBUG LOG (hanya jalan di browser)
 if (typeof window !== 'undefined') {
   console.log('🔧 PROJECT_URL:', PROJECT_URL);
   console.log('🌍 NEXT_PUBLIC_BACKEND_URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
 }
 
-// Helper untuk mendapatkan Authorization Header
+// Helper untuk mendapatkan Authorization Header (hanya di client)
 const getAuthHeader = () => {
-  if (typeof window === 'undefined') return {}; // Safety check untuk SSR
-  
+  if (typeof window === 'undefined') return {}; // SSR: tidak ada localStorage
+
   const storageStr = localStorage.getItem('lamman-auth-storage');
   if (!storageStr) return {};
-  
+
   try {
     const storage = JSON.parse(storageStr);
     const token = storage.state?.accessToken;
@@ -53,23 +56,38 @@ export const fetchProjectByIdAgent = async (id: string) => {
   return response.data;
 };
 
-// 5. Publish Project
+// 5. Publish Project (set slug publik, ex: "booq-erp")
 export const publishProjectAgent = async (id: string, slug: string) => {
-  const response = await axios.patch(`${PROJECT_URL}/${id}/publish`, { slug }, getAuthHeader());
+  const response = await axios.patch(
+    `${PROJECT_URL}/${id}/publish`,
+    { slug },
+    getAuthHeader(),
+  );
   return response.data;
 };
 
-// 6. Fetch Public Site (Server-Side Compatible)
-export const fetchPublicSiteAgent = async (slug: string) => {
-  // Endpoint backend: slug
-  const url = `${API_BASE_URL}/${slug}`;
-  
+// 6. Fetch Public Site (bisa dipanggil dari Client Component & Server Component)
+type PublicSiteResponse = {
+  htmlContent: string;
+  slug?: string;
+  title?: string;
+  [key: string]: any;
+};
+
+export const fetchPublicSiteAgent = async (
+  slug: string,
+): Promise<PublicSiteResponse> => {
+  // Endpoint backend: GET /sites/:slug (public, no auth)
+  const url = `${API_BASE_URL}/sites/${slug}`;
+
   try {
-    const response = await fetch(url, { 
-      cache: 'no-store', // Disable cache untuk selalu dapat data terbaru
-      next: { revalidate: 0 } // Next.js specific - disable ISR cache
-    }); 
-    
+    const response = await fetch(url, {
+      // Next.js: non-cache agar selalu ambil data terbaru
+      cache: 'no-store',
+      // Next.js App Router hint (ignored di browser, dipakai di server)
+      next: { revalidate: 0 },
+    });
+
     if (!response.ok) {
       if (response.status === 404) {
         throw new Error('Site not found');
@@ -77,13 +95,13 @@ export const fetchPublicSiteAgent = async (slug: string) => {
       throw new Error(`Failed to fetch site: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    
-    // Validasi response structure
+    const data = (await response.json()) as PublicSiteResponse;
+
+    // Validasi minimal
     if (!data.htmlContent) {
       throw new Error('Invalid site data: missing htmlContent');
     }
-    
+
     return data;
   } catch (error) {
     console.error('Error fetching public site:', error);
