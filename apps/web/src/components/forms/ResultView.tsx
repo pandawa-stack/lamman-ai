@@ -73,7 +73,7 @@ export function ResultView() {
             // ✅ FIX ROUTING: Menggunakan prefix /s/ untuk URL publik
             if (savedProject.slug) {
                 setSlug(savedProject.slug);
-                setPublishedUrl(`${window.location.origin}/s/${savedProject.slug}`);
+                setPublishedUrl(`${window.location.origin}/${savedProject.slug}`);
             }
 
             toast.success("Project berhasil disimpan ke Database!");
@@ -101,7 +101,7 @@ export function ResultView() {
             await publishProjectAgent(projectId, slug);
             
             // ✅ FIX ROUTING: Construct full URL dengan prefix /s/
-            const fullUrl = `${window.location.origin}/s/${slug}`; 
+            const fullUrl = `${window.location.origin}/${slug}`; 
             setPublishedUrl(fullUrl);
             
             toast.success("Landing Page berhasil tayang!");
@@ -153,7 +153,7 @@ export function ResultView() {
                                     <div className="col-span-3">
                                         <div className="flex items-center space-x-2">
                                             {/* ✅ PREFIX BARU */}
-                                            <span className="text-sm text-muted-foreground whitespace-nowrap">lamman.app/s/</span>
+                                            <span className="text-sm text-muted-foreground whitespace-nowrap">lamman.app/</span>
                                             <Input 
                                                 id="slug" 
                                                 value={slug} 
