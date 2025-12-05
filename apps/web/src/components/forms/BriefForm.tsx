@@ -23,7 +23,7 @@ export function BriefForm() {
 
   const handleNext = () => {
     if (isFormValid) {
-      setStep(1); // Lanjut ke Step 2: Desain
+      setStep(1); // ✅ FIX: Lanjut ke Step 1: Brand Voice
     }
   };
 
@@ -130,7 +130,8 @@ export function BriefForm() {
           disabled={!isFormValid}
           size="lg"
         >
-          Lanjut: Desain →
+          {/* ✅ FIX: Ubah label tombol sesuai flow baru */}
+          Lanjut: Brand Voice →
         </Button>
       </div>
     </div>
