@@ -1,14 +1,12 @@
 import axios from 'axios';
 import { RegisterDto, LoginDto } from './dtos/auth.dto';
 
-// ✅ STANDARDISASI URL
-const rawBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api-production-042c.up.railway.app';
-const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
-const AUTH_URL = `${API_BASE_URL}/auth`; // Endpoint khusus Auth
+// 🔥 TEMPORARY HARDCODE - untuk test
+const API_BASE_URL = 'https://api-production-042c.up.railway.app';
+const AUTH_URL = `${API_BASE_URL}/auth`;
 
-// 🔍 TEMPORARY DEBUG - Hapus setelah selesai
+// 🔍 DEBUG LOG
 console.log('🚀 AUTH_URL:', AUTH_URL);
-console.log('🌍 NEXT_PUBLIC_BACKEND_URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
 
 interface AuthResponse {
   access_token: string;
