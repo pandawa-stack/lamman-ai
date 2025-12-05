@@ -172,7 +172,15 @@ export function ResultView() {
 
                             {publishedUrl && (
                                 <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800 break-all">
-                                    ✅ Live: <a href={publishedUrl} target="_blank" className="underline font-bold">{publishedUrl}</a>
+                                    ✅ Live: 
+                                    <a 
+                                        href={publishedUrl} 
+                                        target="_blank" // 👈 TAMBAHKAN INI
+                                        rel="noopener noreferrer" // 👈 Tambahkan ini untuk keamanan
+                                        className="underline font-bold"
+                                    >
+                                        {publishedUrl}
+                                    </a>
                                 </div>
                             )}
 
