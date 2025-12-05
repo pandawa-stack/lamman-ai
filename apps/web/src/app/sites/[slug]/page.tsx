@@ -1,47 +1,51 @@
-// apps/web/src/app/[slug]/page.tsx
-
-import { fetchPublicSiteAgent } from '@/lib/projectAgent';
+// File: apps/web/src/app/sites/[slug]/page.tsx
 import { notFound } from 'next/navigation';
+import { fetchPublicSiteAgent } from '@/lib/projectAgent';
 
-interface PublicSitePageProps {
-  params: {
-    slug: string;
-  };
+// Metadata dinamis
+export async function generateMetadata({ params }: { params: { slug: string } }) {
+  try {
+    const data = await fetchPublicSiteAgent(params.slug);
+    return {
+      title: `${params.slug} | Lamman AI`,
+      description: 'Landing page powered by Lamman AI',
+    };
+  } catch {
+    return {
+      title: 'Page Not Found',
+    };
+  }
 }
 
-// Halaman ini harus Server Component (default Next.js App Router)
-export default async function PublicSitePage({ params }: PublicSitePageProps) {
-  const { slug } = params;
+// Main component
+export default async function PublicSitePage({ params }: { params: { slug: string } }) {
+  console.log('🔍 Fetching site for slug:', params.slug);
+  
+  try {
+    const data = await fetchPublicSiteAgent(params.slug);
+    
+    console.log('✅ Site data received:', { 
+      slug: params.slug, 
+      hasContent: !!data.htmlContent,
+      isPublished: data.isPublished 
+    });
+    
+    if (!data.isPublished) {
+      console.log('❌ Site not published');
+      notFound();
+    }
 
-  if (!slug) {
-    // Jika entah kenapa slug kosong, gunakan notFound
+    return (
+      <div 
+        dangerouslySetInnerHTML={{ __html: data.htmlContent }} 
+        suppressHydrationWarning
+      />
+    );
+  } catch (error: any) {
+    console.error('❌ Error fetching site:', error.message);
     notFound();
   }
-
-  let siteData;
-  try {
-    // 1. Coba ambil data dari Backend
-    siteData = await fetchPublicSiteAgent(slug);
-  } catch (error) {
-    // 2. Jika fetchProjectByIdAgent melempar error (misal 404),
-    //    kita harus menggunakan notFound() dari Next.js.
-    //    JANGAN redirect ke '/'.
-    console.error(`Error fetching public site for slug ${slug}:`, error);
-    
-    // Ini akan menampilkan halaman 404 Next.js
-    notFound(); 
-  }
-
-  // Jika data berhasil diambil tapi HTML kosong (jarang terjadi)
-  if (!siteData || !siteData.htmlContent) {
-    notFound(); 
-  }
-
-  // 3. Render konten HTML yang dikembalikan dari Backend
-  //    Asumsikan Anda punya komponen yang bisa merender string HTML
-  return (
-    <div className="w-full h-full">
-      <div dangerouslySetInnerHTML={{ __html: siteData.htmlContent }} />
-    </div>
-  );
 }
+
+// Revalidate setiap 60 detik
+export const revalidate = 60;
