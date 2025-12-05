@@ -1,24 +1,18 @@
 // File: apps/web/src/app/page.tsx
+
 'use client';
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import LandingPage from './landing-page'; // Import komponen baru
+// ✅ Pastikan useRouter dan useEffect TIDAK ADA di sini
+import LandingPage from './landing-page';
 
 export default function Page() {
   const { isAuthenticated } = useAuthStore();
-  const router = useRouter();
+  
+  // LOGIKA REDIRECT KE DASHBOARD HARUS DIHILANGKAN DARI SINI
+  // Karena ini halaman publik
 
-  // Jika user sudah login, redirect ke dashboard
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.push('/dashboard');
-    }
-  }, [isAuthenticated, router]);
-
-  // Jika belum login, tampilkan Landing Page yang keren
-  return <LandingPage />;
+  return <LandingPage isAuthenticated={isAuthenticated} />; // Tambahkan prop untuk Link
 }

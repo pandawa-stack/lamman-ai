@@ -1,83 +1,47 @@
-// File: apps/web/src/app/[slug]/page.tsx
-
-'use client'; // Gunakan Client Component agar stabil di Dev/Turbopack
+// apps/web/src/app/[slug]/page.tsx
 
 import { fetchPublicSiteAgent } from '@/lib/projectAgent';
-import { notFound, useParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { notFound } from 'next/navigation';
 
-export default function PublicLandingPage() {
-  const params = useParams();
-  const slug = params.slug as string; 
-  
-  const [site, setSite] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+interface PublicSitePageProps {
+  params: {
+    slug: string;
+  };
+}
 
-  useEffect(() => {
-    if (slug) {
-      const loadSite = async () => {
-        try {
-          const fetchedSite = await fetchPublicSiteAgent(slug);
-          setSite(fetchedSite);
-        } catch (err) {
-          console.error("Gagal load site:", err);
-          setError(true);
-        } finally {
-          setLoading(false);
-        }
-      };
-      loadSite();
-    }
-  }, [slug]);
+// Halaman ini harus Server Component (default Next.js App Router)
+export default async function PublicSitePage({ params }: PublicSitePageProps) {
+  const { slug } = params;
 
-  if (loading) {
-      return (
-        <div className="flex h-screen items-center justify-center bg-gray-50">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      );
-  }
-  
-  if (error || !site || !site.htmlContent) {
-      return (
-          <div className="flex h-screen items-center justify-center bg-gray-100 font-sans">
-              <div className="text-center p-8 border rounded-xl bg-white shadow-lg max-w-md">
-                  <h1 className="text-4xl mb-4">🚫</h1>
-                  <h2 className="text-xl font-bold text-gray-800">Halaman Tidak Ditemukan</h2>
-                  <p className="text-gray-500 mt-2">
-                    URL <strong>/{slug}</strong> tidak terdaftar atau belum ditayangkan.
-                  </p>
-                  <a href="/" className="mt-6 inline-block text-blue-600 hover:underline">Kembali ke Lamman AI</a>
-              </div>
-          </div>
-      );
+  if (!slug) {
+    // Jika entah kenapa slug kosong, gunakan notFound
+    notFound();
   }
 
-  // ✅ KUNCI KONSISTENSI: Gunakan IFrame Full Screen
-  // Ini memastikan Tailwind CDN di dalam HTML user berjalan terisolasi
-  // persis seperti saat di-preview di dashboard.
+  let siteData;
+  try {
+    // 1. Coba ambil data dari Backend
+    siteData = await fetchPublicSiteAgent(slug);
+  } catch (error) {
+    // 2. Jika fetchProjectByIdAgent melempar error (misal 404),
+    //    kita harus menggunakan notFound() dari Next.js.
+    //    JANGAN redirect ke '/'.
+    console.error(`Error fetching public site for slug ${slug}:`, error);
+    
+    // Ini akan menampilkan halaman 404 Next.js
+    notFound(); 
+  }
+
+  // Jika data berhasil diambil tapi HTML kosong (jarang terjadi)
+  if (!siteData || !siteData.htmlContent) {
+    notFound(); 
+  }
+
+  // 3. Render konten HTML yang dikembalikan dari Backend
+  //    Asumsikan Anda punya komponen yang bisa merender string HTML
   return (
-    <div style={{ 
-        width: '100vw', 
-        height: '100vh', 
-        overflow: 'hidden', 
-        margin: 0, 
-        padding: 0,
-        backgroundColor: '#fff' 
-    }}>
-        <iframe 
-            srcDoc={site.htmlContent}
-            style={{ 
-                width: '100%', 
-                height: '100%', 
-                border: 'none',
-                display: 'block' 
-            }}
-            title={`Landing Page - ${slug}`}
-            allowFullScreen
-        />
+    <div className="w-full h-full">
+      <div dangerouslySetInnerHTML={{ __html: siteData.htmlContent }} />
     </div>
   );
 }
