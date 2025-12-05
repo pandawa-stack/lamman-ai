@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // ✅ STANDARDISASI URL
-const rawBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+const rawBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api-production-042c.up.railway.app';
 const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
 const PROJECT_URL = `${API_BASE_URL}/projects`; // Endpoint khusus Projects
 
