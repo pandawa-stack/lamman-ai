@@ -1,21 +1,32 @@
+// File: apps/web/src/lib/projectAgent.ts
 import axios from 'axios';
 
 // ✅ STANDARDISASI URL
 const rawBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api-production-042c.up.railway.app';
 const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
-const PROJECT_URL = `${API_BASE_URL}/projects`; // Endpoint khusus Projects
+const PROJECT_URL = `${API_BASE_URL}/projects`;
 
-// 🔍 DEBUG LOG
-console.log('🔧 PROJECT_URL:', PROJECT_URL);
-console.log('🌍 NEXT_PUBLIC_BACKEND_URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
+// 🔍 DEBUG LOG (bisa dihapus setelah production stabil)
+if (typeof window !== 'undefined') {
+  console.log('🔧 PROJECT_URL:', PROJECT_URL);
+  console.log('🌍 NEXT_PUBLIC_BACKEND_URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
+}
 
-// Helper Header
+// Helper untuk mendapatkan Authorization Header
 const getAuthHeader = () => {
+  if (typeof window === 'undefined') return {}; // Safety check untuk SSR
+  
   const storageStr = localStorage.getItem('lamman-auth-storage');
   if (!storageStr) return {};
-  const storage = JSON.parse(storageStr);
-  const token = storage.state?.accessToken;
-  return { headers: { Authorization: `Bearer ${token}` } };
+  
+  try {
+    const storage = JSON.parse(storageStr);
+    const token = storage.state?.accessToken;
+    return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+  } catch (error) {
+    console.error('Error parsing auth storage:', error);
+    return {};
+  }
 };
 
 // 1. Simpan Project
@@ -24,44 +35,58 @@ export const saveProjectAgent = async (data: any) => {
   return response.data;
 };
 
-// 2. Fetch All
+// 2. Fetch All Projects
 export const fetchProjectsAgent = async () => {
   const response = await axios.get(PROJECT_URL, getAuthHeader());
   return response.data;
 };
 
-// 3. Delete
+// 3. Delete Project
 export const deleteProjectAgent = async (id: string) => {
   const response = await axios.delete(`${PROJECT_URL}/${id}`, getAuthHeader());
   return response.data;
 };
 
-// 4. Fetch One
+// 4. Fetch One Project by ID
 export const fetchProjectByIdAgent = async (id: string) => {
   const response = await axios.get(`${PROJECT_URL}/${id}`, getAuthHeader());
   return response.data;
 };
 
-// 5. Publish
+// 5. Publish Project
 export const publishProjectAgent = async (id: string, slug: string) => {
-    const response = await axios.patch(`${PROJECT_URL}/${id}/publish`, { slug }, getAuthHeader());
-    return response.data;
+  const response = await axios.patch(`${PROJECT_URL}/${id}/publish`, { slug }, getAuthHeader());
+  return response.data;
 };
 
-// 6. Fetch Public Site (Native Fetch untuk Server Component)
+// 6. Fetch Public Site (Server-Side Compatible)
 export const fetchPublicSiteAgent = async (slug: string) => {
-    // Endpoint khusus: /sites
-    const url = `${API_BASE_URL}/sites/${slug}`;
-    
+  // Endpoint backend: /sites/:slug
+  const url = `${API_BASE_URL}/sites/${slug}`;
+  
+  try {
     const response = await fetch(url, { 
-        cache: 'no-store' 
+      cache: 'no-store', // Disable cache untuk selalu dapat data terbaru
+      next: { revalidate: 0 } // Next.js specific - disable ISR cache
     }); 
     
     if (!response.ok) {
-        if (response.status === 404) throw new Error('Not Found');
-        throw new Error('Failed to fetch site data.');
+      if (response.status === 404) {
+        throw new Error('Site not found');
+      }
+      throw new Error(`Failed to fetch site: ${response.statusText}`);
     }
 
-    const data = await response.json(); 
+    const data = await response.json();
+    
+    // Validasi response structure
+    if (!data.htmlContent) {
+      throw new Error('Invalid site data: missing htmlContent');
+    }
+    
     return data;
+  } catch (error) {
+    console.error('Error fetching public site:', error);
+    throw error;
+  }
 };
