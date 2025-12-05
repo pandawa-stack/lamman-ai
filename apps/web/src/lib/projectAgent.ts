@@ -61,8 +61,8 @@ export const publishProjectAgent = async (id: string, slug: string) => {
 
 // 6. Fetch Public Site (Server-Side Compatible)
 export const fetchPublicSiteAgent = async (slug: string) => {
-  // Endpoint backend: /sites/:slug
-  const url = `${API_BASE_URL}/sites/${slug}`;
+  // Endpoint backend: slug
+  const url = `${API_BASE_URL}/${slug}`;
   
   try {
     const response = await fetch(url, { 
