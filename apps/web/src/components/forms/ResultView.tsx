@@ -1,8 +1,7 @@
 // File: apps/web/src/components/forms/ResultView.tsx
-
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation"; 
 import { useProjectStore } from "@/store/useProjectStore";
 import { Button } from "@/components/ui/button";
@@ -24,11 +23,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function ResultView() {
-    const { brief, design, voice, layout, copy, html_output, setStep } = useProjectStore();
+    // Ambil SEMUA data state untuk disimpan
+    const { brief, design, voice, layout, copy, html_output, setStep, resetProject } = useProjectStore();
     const [isSaving, setIsSaving] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
     
-    // State untuk Publish
+    // State untuk Publish: Project ID harus disimpan lokal di komponen hasil
     const [projectId, setProjectId] = useState<string | null>(null);
     const [slug, setSlug] = useState("");
     const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
@@ -56,20 +56,17 @@ export function ResultView() {
         toast.success("File HTML diunduh!");
     };
 
-    // 1. LOGIC SIMPAN PROJECT
+    // 1. LOGIC SIMPAN PROJECT (Mengambil ID dari DB)
     const handleSaveProject = async () => {
         if (!brief) return;
         setIsSaving(true);
         try {
             const payload = {
-                brief,
-                design,
-                voice,
-                layout,
-                copy,
+                brief, design, voice, layout, copy,
                 htmlContent: html_output
             };
 
+            // Backend harus mengembalikan object project yang disimpan
             const savedProject = await saveProjectAgent(payload);
             
             // ✅ PENTING: Simpan ID Project agar bisa di-publish
@@ -78,10 +75,10 @@ export function ResultView() {
             // Jika project sudah punya slug sebelumnya, set ke state
             if (savedProject.slug) {
                 setSlug(savedProject.slug);
-                setPublishedUrl(`${window.location.origin}/${savedProject.slug}`);
+                setPublishedUrl(`${window.location.origin}/sites/${savedProject.slug}`);
             }
 
-            toast.success("Project berhasil disimpan!");
+            toast.success("Project berhasil disimpan ke Database!");
         } catch (error) {
             console.error(error);
             toast.error("Gagal menyimpan project.");
@@ -90,7 +87,7 @@ export function ResultView() {
         }
     };
 
-    // 2. LOGIC PUBLISH PROJECT
+    // 2. LOGIC PUBLISH PROJECT (Menggunakan ID yang sudah disimpan)
     const handlePublish = async () => {
         if (!projectId) {
             toast.error("Harap simpan project terlebih dahulu!");
@@ -105,8 +102,8 @@ export function ResultView() {
         try {
             await publishProjectAgent(projectId, slug);
             
-            // Construct full URL
-            const fullUrl = `${window.location.origin}/${slug}`;
+            // ✅ FIX: Construct full URL dengan prefix /sites/
+            const fullUrl = `${window.location.origin}/sites/${slug}`; 
             setPublishedUrl(fullUrl);
             
             toast.success("Landing Page berhasil tayang!");
@@ -136,7 +133,7 @@ export function ResultView() {
                         {projectId ? "Update Project" : "Simpan Project"}
                     </Button>
 
-                    {/* TOMBOL PUBLISH (DIALOG) */}
+                    {/* TOMBOL PUBLISH (Dialog) */}
                     <Dialog>
                         <DialogTrigger asChild>
                             <Button variant="default" disabled={!projectId} title={!projectId ? "Simpan dulu untuk publish" : ""}>
@@ -157,12 +154,12 @@ export function ResultView() {
                                     <Label htmlFor="slug" className="text-right">URL</Label>
                                     <div className="col-span-3">
                                         <div className="flex items-center space-x-2">
-                                            <span className="text-sm text-muted-foreground whitespace-nowrap">lamman.ai/</span>
+                                            <span className="text-sm text-muted-foreground whitespace-nowrap">lamman.app/sites/</span>
                                             <Input 
                                                 id="slug" 
                                                 value={slug} 
                                                 onChange={(e) => setSlug(e.target.value)} 
-                                                placeholder="gaji-kilat" 
+                                                placeholder="booq-erp" 
                                             />
                                         </div>
                                         <p className="text-[10px] text-muted-foreground mt-1">Hanya huruf kecil, angka, dan strip (-).</p>
@@ -173,12 +170,7 @@ export function ResultView() {
                             {publishedUrl && (
                                 <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800 break-all">
                                     ✅ Live: 
-                                    <a 
-                                        href={publishedUrl} 
-                                        target="_blank" // 👈 TAMBAHKAN INI
-                                        rel="noopener noreferrer" // 👈 Tambahkan ini untuk keamanan
-                                        className="underline font-bold"
-                                    >
+                                    <a href={publishedUrl} target="_blank" rel="noopener noreferrer" className="underline font-bold">
                                         {publishedUrl}
                                     </a>
                                 </div>
@@ -203,7 +195,7 @@ export function ResultView() {
                 </div>
             </div>
 
-            {/* Preview Iframe */}
+            {/* Preview Iframe (Garantor Konsistensi Visual) */}
             <div className="border rounded-lg shadow-xl overflow-hidden bg-white">
                 <div className="w-full h-[600px]">
                     <iframe 
