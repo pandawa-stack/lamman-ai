@@ -5,6 +5,10 @@ const rawBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api-productio
 const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
 const PROJECT_URL = `${API_BASE_URL}/projects`; // Endpoint khusus Projects
 
+// 🔍 DEBUG LOG
+console.log('🔧 PROJECT_URL:', PROJECT_URL);
+console.log('🌍 NEXT_PUBLIC_BACKEND_URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
+
 // Helper Header
 const getAuthHeader = () => {
   const storageStr = localStorage.getItem('lamman-auth-storage');
