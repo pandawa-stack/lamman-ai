@@ -2,17 +2,14 @@
 
 'use client';
 
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+// Hapus Link, Button, useRouter, useEffect yang tidak diperlukan lagi di sini
 import { useAuthStore } from '@/store/useAuthStore';
-// ✅ Pastikan useRouter dan useEffect TIDAK ADA di sini
 import LandingPage from './landing-page';
 
 export default function Page() {
   const { isAuthenticated } = useAuthStore();
   
-  // LOGIKA REDIRECT KE DASHBOARD HARUS DIHILANGKAN DARI SINI
-  // Karena ini halaman publik
-
-  return <LandingPage isAuthenticated={isAuthenticated} />; // Tambahkan prop untuk Link
+  // ✅ FINAL FIX: Halaman Root (Landing Page) sekarang HANYA MENGIRIM status auth 
+  // dan merender dirinya, tanpa melakukan redirect yang mengganggu rute lain.
+  return <LandingPage isAuthenticated={isAuthenticated} />;
 }
