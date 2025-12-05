@@ -1,10 +1,13 @@
-// File: apps/web/src/app/landing-page.tsx
+// File: apps/web/src/app/landing-page.tsx (Bagian Atas)
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-// Hapus useAuthStore jika sudah di-import dari page.tsx dan dikirim sebagai prop
-// Kita asumsikan Button dan helper components (seperti FaqItem, dll) sudah diimport/didefinisikan di sini.
+import { useAuthStore } from '@/store/useAuthStore'; 
+
+// ✅ TAMBAHKAN IMPORT INI
+import { Button } from '@/components/ui/button';
 
 interface LandingPageProps {
   isAuthenticated: boolean; // ✅ Menerima prop status login
