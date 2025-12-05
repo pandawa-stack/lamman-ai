@@ -1,5 +1,8 @@
 // File: apps/web/src/app/s/[slug]/page.tsx
 
+export const dynamic = 'force-dynamic';   // ⬅️ LETAKKAN DI BARIS PALING ATAS
+// (opsional juga bisa menambah: export const fetchCache = 'force-no-store')
+
 import { notFound } from 'next/navigation';
 import { fetchPublicSiteAgent } from '@/lib/projectAgent';
 import { Metadata } from 'next';
