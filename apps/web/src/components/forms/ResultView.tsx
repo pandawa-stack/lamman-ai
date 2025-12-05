@@ -66,16 +66,14 @@ export function ResultView() {
                 htmlContent: html_output
             };
 
-            // Backend harus mengembalikan object project yang disimpan
             const savedProject = await saveProjectAgent(payload);
             
-            // ✅ PENTING: Simpan ID Project agar bisa di-publish
             setProjectId(savedProject.id);
             
-            // Jika project sudah punya slug sebelumnya, set ke state
+            // ✅ FIX ROUTING: Menggunakan prefix /s/ untuk URL publik
             if (savedProject.slug) {
                 setSlug(savedProject.slug);
-                setPublishedUrl(`${window.location.origin}/sites/${savedProject.slug}`);
+                setPublishedUrl(`${window.location.origin}/s/${savedProject.slug}`);
             }
 
             toast.success("Project berhasil disimpan ke Database!");
@@ -102,8 +100,8 @@ export function ResultView() {
         try {
             await publishProjectAgent(projectId, slug);
             
-            // ✅ FIX: Construct full URL dengan prefix /sites/
-            const fullUrl = `${window.location.origin}/sites/${slug}`; 
+            // ✅ FIX ROUTING: Construct full URL dengan prefix /s/
+            const fullUrl = `${window.location.origin}/s/${slug}`; 
             setPublishedUrl(fullUrl);
             
             toast.success("Landing Page berhasil tayang!");
@@ -145,7 +143,7 @@ export function ResultView() {
                             <DialogHeader>
                                 <DialogTitle>Tayangkan Landing Page</DialogTitle>
                                 <DialogDescription>
-                                    Landing page Anda akan dapat diakses publik.
+                                    Pilih alamat URL unik untuk halaman Anda.
                                 </DialogDescription>
                             </DialogHeader>
                             
@@ -154,7 +152,8 @@ export function ResultView() {
                                     <Label htmlFor="slug" className="text-right">URL</Label>
                                     <div className="col-span-3">
                                         <div className="flex items-center space-x-2">
-                                            <span className="text-sm text-muted-foreground whitespace-nowrap">lamman.app/sites/</span>
+                                            {/* ✅ PREFIX BARU */}
+                                            <span className="text-sm text-muted-foreground whitespace-nowrap">lamman.app/s/</span>
                                             <Input 
                                                 id="slug" 
                                                 value={slug} 
