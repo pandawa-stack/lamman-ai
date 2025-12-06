@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Poppins } from 'next/font/google'; // Import Font Branding
 import { ThemeProvider } from "@/components/theme-provider";
 import { useProjectStore } from '@/store/useProjectStore';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -13,38 +14,41 @@ import { toast } from 'sonner';
 // UI
 import { Button } from "@/components/ui/button";
 import { Stepper } from "@/components/Stepper";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, LogOut, Zap } from "lucide-react"; // Tambah Icon
 
 // Components
 import { ProjectList } from "@/components/dashboard/ProjectList";
 import { BriefForm } from "@/components/forms/BriefForm";
 import { DesignForm } from "@/components/forms/DesignForm";
-import { VoiceForm } from "@/components/forms/VoiceForm";   
+import { VoiceForm } from "@/components/forms/VoiceForm";    
 import { GenerateView } from "@/components/forms/GenerateView";
 import { ResultView } from "@/components/forms/ResultView";
+
+// Setup Font
+const poppins = Poppins({ 
+    subsets: ['latin'], 
+    weight: ['400', '600', '700'],
+    display: 'swap',
+});
 
 const renderWizardStep = (step: number) => {
     switch (step) {
       case 0: return <BriefForm />;
-      case 1: return <VoiceForm />;   // 👈 Voice dulu
-      case 2: return <GenerateView />; // 👈 Generate Copy
-      case 3: return <DesignForm />;   // 👈 Baru Desain (Kita akan update DesignForm untuk handle Layout juga)
+      case 1: return <VoiceForm />;
+      case 2: return <GenerateView />;
+      case 3: return <DesignForm />;
       case 4: return <ResultView />;
       default: return <BriefForm />;
     }
 };
 
 export default function DashboardPage() {
-  // ✅ PERBAIKAN DI SINI:
-  // Ganti setBrief -> updateBrief
-  // Ganti setDesign -> updateDesign
-  // Ganti setVoice -> updateVoice
   const { 
     step, 
     resetProject, 
-    updateBrief,  // 👈 Pakai update
-    updateDesign, // 👈 Pakai update
-    updateVoice,  // 👈 Pakai update
+    updateBrief, 
+    updateDesign, 
+    updateVoice, 
     setCopy, 
     updateLayout, 
     setHtmlOutput, 
@@ -83,12 +87,10 @@ export default function DashboardPage() {
       try {
           const project = await fetchProjectByIdAgent(id);
           
-          // ✅ PERBAIKAN: Gunakan fungsi update...
           if (project.brief) updateBrief(project.brief as any);
           if (project.design) updateDesign(project.design as any);
           if (project.voice) updateVoice(project.voice as any);
           
-          // setCopy dan setHtmlOutput tetap sama karena memang ada di store
           if (project.copy) setCopy(project.copy as any);
           if (project.layout) updateLayout(project.layout as any);
           if (project.htmlContent) setHtmlOutput(project.htmlContent);
@@ -106,45 +108,89 @@ export default function DashboardPage() {
 
   if (!isAuthenticated) return null;
 
+  // Definisi Warna Brand
+  const colors = {
+    primary: '#0C1427',   // Dark Blue
+    accent: '#FF9E1B',    // Orange
+    background: '#F8FAFC' // Slate White
+  };
+
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <main className="min-h-screen bg-background p-4">
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+      {/* Background Utama Dashboard */}
+      <main className="min-h-screen p-4 font-sans" style={{ backgroundColor: colors.background }}>
+        
         {/* Overlay Loading saat buka project */}
         {isLoadingProject && (
-            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="fixed inset-0 bg-[#0C1427]/90 backdrop-blur-sm z-50 flex items-center justify-center">
                 <div className="flex flex-col items-center">
-                    <Loader2 className="h-10 w-10 animate-spin text-primary mb-2" />
-                    <p>Memuat Project...</p>
+                    <Loader2 className="h-12 w-12 animate-spin mb-4" style={{ color: colors.accent }} />
+                    <p className="text-white font-medium text-lg animate-pulse">Memuat Project...</p>
                 </div>
             </div>
         )}
 
-        <div className="container mx-auto max-w-7xl pt-6 pb-24">
+        <div className="container mx-auto max-w-7xl pt-4 pb-24">
             
-            <div className="flex justify-between items-center mb-8 border-b pb-4">
+            {/* Header Dashboard */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 border-b border-gray-200 pb-6">
                 <div className="flex items-center gap-4">
+                    {/* Tombol Kembali (hanya muncul di mode wizard) */}
                     {viewMode === 'wizard' && (
-                        <Button variant="ghost" onClick={handleBackToList}>
-                            <ArrowLeft className="w-4 h-4 mr-2" /> Kembali
+                        <Button 
+                            variant="ghost" 
+                            onClick={handleBackToList}
+                            className="mr-2 hover:bg-gray-100 text-gray-600"
+                        >
+                            <ArrowLeft className="w-5 h-5 mr-2" /> Kembali
                         </Button>
                     )}
-                    <h1 className="text-xl font-bold text-primary">
-                        {viewMode === 'list' ? '🚀 Lamman AI Dashboard' : '🛠️ Project Builder'}
-                    </h1>
+
+                    {/* Branding Logo / Title */}
+                    <div>
+                        <h1 className={`${poppins.className} text-2xl font-bold flex items-center gap-2`} style={{ color: colors.primary }}>
+                            {viewMode === 'list' ? (
+                                <>
+                                    <Zap className="w-6 h-6" style={{ fill: colors.accent, color: colors.accent }} />
+                                    <span>Dashboard</span>
+                                </>
+                            ) : (
+                                <span>🛠️ Project Editor</span>
+                            )}
+                        </h1>
+                        <p className="text-sm text-gray-500 mt-1">
+                            {viewMode === 'list' 
+                                ? 'Kelola semua landing page Anda di satu tempat.' 
+                                : 'Rancang landing page konversi tinggi.'}
+                        </p>
+                    </div>
                 </div>
-                <Button variant="outline" onClick={handleLogout} className="text-red-500 hover:bg-red-50">
+
+                {/* Tombol Logout */}
+                <Button 
+                    variant="outline" 
+                    onClick={handleLogout} 
+                    className="mt-4 md:mt-0 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
+                >
+                    <LogOut className="w-4 h-4 mr-2" />
                     Logout
                 </Button>
             </div>
 
+            {/* Content Area */}
             {viewMode === 'list' ? (
                 <ProjectList onCreateNew={handleCreateNew} onView={handleViewProject} />
             ) : (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="mb-12">
+                    {/* Stepper Container */}
+                    <div className="mb-12 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                         <Stepper />
                     </div>
-                    {renderWizardStep(step)}
+                    
+                    {/* Form Area */}
+                    <div className="bg-white/50 rounded-xl min-h-[400px]">
+                        {renderWizardStep(step)}
+                    </div>
                 </div>
             )}
 
