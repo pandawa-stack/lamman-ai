@@ -1,19 +1,25 @@
 // File: apps/web/src/app/s/[slug]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
+// ✅ FIX 1: Definisikan tipe params sebagai Promise
+interface RouteParams {
+  params: Promise<{ slug: string }>;
+}
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: RouteParams // ✅ FIX 2: Gunakan tipe yang benar
 ) {
-  const slug = params.slug;
+  // ✅ FIX 3: Await params sebelum mengakses slug
+  const { slug } = await params;
 
   // 1. Panggil Backend untuk cari Project berdasarkan Slug pendek
-  // Kita butuh URL Backend (Railway)
-  const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+  // Gunakan Environment Variable yang sudah distandarisasi
+  const rawBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+  const API_BASE = rawBaseUrl.replace(/\/$/, '');
   
   try {
     // Fetch data project dari Backend NestJS
-    // Endpoint ini harus mengembalikan object project yang ada 'deployUrl'-nya
     const projectRes = await fetch(`${API_BASE}/sites/${slug}`, { 
         cache: 'no-store' 
     });
@@ -31,13 +37,18 @@ export async function GET(
 
     // 2. Ambil konten HTML mentah dari Vercel Blob
     const blobRes = await fetch(blobUrl);
+    
+    if (!blobRes.ok) {
+        return new NextResponse('Failed to load site content', { status: 502 });
+    }
+    
     const htmlContent = await blobRes.text();
 
-    // 3. Sajikan sebagai HTML (Browser akan merender ini!)
+    // 3. Sajikan sebagai HTML
     return new NextResponse(htmlContent, {
       headers: {
         'Content-Type': 'text/html',
-        'Cache-Control': 'public, max-age=3600, must-revalidate', // Cache 1 jam
+        'Cache-Control': 'public, max-age=3600, must-revalidate',
       },
     });
 
