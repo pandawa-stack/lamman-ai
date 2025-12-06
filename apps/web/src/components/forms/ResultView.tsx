@@ -1,9 +1,9 @@
 // File: apps/web/src/components/forms/ResultView.tsx
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation"; 
-import { useProjectStore } from '@/store/useProjectStore';
+import { useProjectStore } from "@/store/useProjectStore";
 import { Button } from "@/components/ui/button";
 import { Copy, Download, Home, RotateCcw, Save, Loader2, Globe } from "lucide-react";
 import { toast } from 'sonner';
@@ -22,8 +22,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+// ✅ KONFIGURASI DOMAIN PUBLIK BARU (lamman.site)
+const PUBLIC_DOMAIN = "https://lamman.site";
+
 export function ResultView() {
-    // Ambil SEMUA data state untuk disimpan
     const { brief, design, voice, layout, copy, html_output, setStep, resetProject } = useProjectStore();
     const [isSaving, setIsSaving] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
@@ -32,16 +34,8 @@ export function ResultView() {
     const [projectId, setProjectId] = useState<string | null>(null);
     const [slug, setSlug] = useState("");
     const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
-    const [origin, setOrigin] = useState("");
 
     const router = useRouter();
-
-    // Ambil origin browser (misal: https://lamman.app) untuk display
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            setOrigin(window.location.origin);
-        }
-    }, []);
 
     const handleReset = () => {
         resetProject();
@@ -73,9 +67,7 @@ export function ResultView() {
     };
 
     // --- UTILITY URL BUILDER ---
-    // URL ini mengarah ke Proxy Route di Next.js (apps/web/src/app/s/[slug]/route.ts)
-    const buildPublicUrl = (s: string) => `${origin}/s/${s}`;
-    const displayOrigin = origin ? origin.replace(/^https?:\/\//, "") : "lamman.app";
+    const buildPublicUrl = (s: string) => `${PUBLIC_DOMAIN}/${s}`;
 
     // 1. LOGIC SIMPAN PROJECT
     const handleSaveProject = async () => {
@@ -90,7 +82,7 @@ export function ResultView() {
             const savedProject = await saveProjectAgent(payload);
             setProjectId(savedProject.id);
             
-            // Jika project sudah punya slug, tampilkan linknya
+            // Jika project sudah punya slug, update URL preview
             if (savedProject.slug) {
                 setSlug(savedProject.slug);
                 setPublishedUrl(buildPublicUrl(savedProject.slug));
@@ -105,35 +97,30 @@ export function ResultView() {
         }
     };
 
-    // 2. LOGIC PUBLISH PROJECT (Upload ke Blob & Update DB)
+    // 2. LOGIC PUBLISH PROJECT
     const handlePublish = async () => {
         if (!projectId) {
             toast.error("Harap simpan project terlebih dahulu!");
             return;
         }
         if (!slug) {
-            toast.error("Masukkan URL slug yang diinginkan.");
+            toast.error("Masukkan nama URL yang diinginkan.");
             return;
         }
 
         setIsPublishing(true);
         try {
-            // Backend akan:
-            // 1. Upload HTML ke Vercel Blob
-            // 2. Simpan URL Blob ke 'deployUrl'
-            // 3. Simpan slug pendek ke 'slug'
-            // 4. Return object project terbaru
-            const updatedProject = await publishProjectAgent(projectId, slug);
+            await publishProjectAgent(projectId, slug);
             
-            // Kita gunakan slug pendek untuk URL publik (Proxy)
-            const fullUrl = buildPublicUrl(updatedProject.slug); 
-            
+            // Construct URL ke domain publik baru (lamman.site)
+            const fullUrl = buildPublicUrl(slug); 
             setPublishedUrl(fullUrl);
+            
             toast.success("Landing Page berhasil tayang!");
         } catch (error: any) {
             const msg = error.response?.data?.message;
             if (msg === 'SLUG_TAKEN') {
-                toast.error(`URL '${slug}' sudah dipakai. Coba nama lain.`);
+                toast.error(`Nama '${slug}' sudah dipakai. Coba nama lain.`);
             } else {
                 toast.error("Gagal publish project.");
             }
@@ -168,7 +155,7 @@ export function ResultView() {
                             <DialogHeader>
                                 <DialogTitle>Tayangkan Landing Page</DialogTitle>
                                 <DialogDescription>
-                                    Halaman Anda akan di-hosting secara publik.
+                                    Halaman Anda akan di-hosting di domain publik: {PUBLIC_DOMAIN}
                                 </DialogDescription>
                             </DialogHeader>
                             
@@ -177,8 +164,8 @@ export function ResultView() {
                                     <Label htmlFor="slug" className="text-right">URL</Label>
                                     <div className="col-span-3">
                                         <div className="flex items-center space-x-2">
-                                            {/* Visualisasi Proxy URL */}
-                                            <span className="text-sm text-muted-foreground whitespace-nowrap">{displayOrigin}/s/</span>
+                                            {/* ✅ Visualisasi Domain Baru */}
+                                            <span className="text-sm text-muted-foreground whitespace-nowrap">lamman.site/</span>
                                             <Input 
                                                 id="slug" 
                                                 value={slug} 
@@ -194,7 +181,7 @@ export function ResultView() {
                             {publishedUrl && (
                                 <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800 break-all">
                                     ✅ Live: 
-                                    <a href={publishedUrl} target="_blank" rel="noopener noreferrer" className="underline font-bold ml-1">
+                                    <a href={publishedUrl} target="_blank" rel="noopener noreferrer" className="underline font-bold ml-1 block mt-1">
                                         {publishedUrl}
                                     </a>
                                 </div>
