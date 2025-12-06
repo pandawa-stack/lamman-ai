@@ -3,14 +3,13 @@
 import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService, Project } from '@repo/database';
 import { CreateProjectDto } from './dto/create-project.dto';
-// ✅ 1. Import Vercel Blob SDK
-import { put } from '@vercel/blob'; 
+import { put } from '@vercel/blob';
 
 @Injectable()
 export class ProjectsService {
   constructor(private prisma: PrismaService) {}
 
-  // --- CRUD METHODS (TETAP SAMA) ---
+  // --- CRUD METHODS ---
 
   async create(userId: string, dto: CreateProjectDto): Promise<Project> {
     return this.prisma.project.create({
@@ -33,23 +32,27 @@ export class ProjectsService {
       where: { userId },
       orderBy: { updatedAt: 'desc' },
       select: {
-        id: true, name: true, slug: true, isPublished: true,
+        id: true, name: true, slug: true, isPublished: true, deployUrl: true, // Include deployUrl
         createdAt: true, updatedAt: true, brief: true, currentStep: true,
       }
     });
   }
 
   async findOne(id: string, userId: string): Promise<Project | null> {
-    return this.prisma.project.findFirst({ where: { id, userId } });
+    return this.prisma.project.findFirst({
+      where: { id, userId },
+    });
   }
 
   async remove(id: string, userId: string): Promise<Project | null> {
     const project = await this.prisma.project.findFirst({ where: { id, userId } });
-    if (project) return this.prisma.project.delete({ where: { id } });
+    if (project) {
+        return this.prisma.project.delete({ where: { id } });
+    }
     return null;
   }
 
-  // --- FITUR PUBLISH V2: UPLOAD KE VERCEL BLOB ---
+  // --- FITUR PUBLISH (UPLOAD KE BLOB) ---
 
   async publish(id: string, userId: string, slugInput: string): Promise<Project> {
     // 1. Ambil Data Project
@@ -65,30 +68,46 @@ export class ProjectsService {
         throw new BadRequestException('Project belum memiliki konten HTML. Silakan generate dahulu.');
     }
 
-    // 2. Siapkan Nama File (Slug)
-    const cleanName = slugInput.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-    const fileName = `sites/${cleanName}.html`; // Akan disimpan di folder 'sites/'
+    // 2. Validasi & Bersihkan Slug
+    const cleanSlug = slugInput.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    
+    // Cek apakah slug sudah dipakai orang lain
+    const existing = await this.prisma.project.findUnique({
+        where: { slug: cleanSlug }
+    });
 
-    // ✅ 3. INJECT TOKEN ANDA DI SINI
-    // Prioritas: Environment Variable -> Hardcoded Token (Fallback)
-    const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN || 'vercel_blob_rw_Kukkmn9T7QaVtyTA_KsYHJ9FdkE7flEGbXKSR06ubtlDTfP';
+    if (existing && existing.id !== id) {
+        throw new BadRequestException('SLUG_TAKEN');
+    }
+
+    const fileName = `sites/${cleanSlug}.html`; 
+
+    // Ambil Token (Prioritas Env Var, Fallback ke hardcoded jika darurat)
+    const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN; 
+
+    if (!BLOB_TOKEN) {
+        console.error('BLOB_READ_WRITE_TOKEN is missing in .env');
+        throw new InternalServerErrorException('Server misconfiguration: Storage token missing.');
+    }
 
     try {
-        // 4. Upload ke Vercel Blob
+        // 3. Upload ke Vercel Blob
         const blob = await put(fileName, project.htmlContent, {
             access: 'public',
             contentType: 'text/html',
-            addRandomSuffix: false, // Agar URL tetap bersih
-            token: BLOB_TOKEN // Menggunakan token yang Anda berikan
+            addRandomSuffix: false, // Overwrite file jika nama sama
+            token: BLOB_TOKEN 
         });
 
         console.log(`✅ Upload Sukses: ${blob.url}`);
 
-        // 5. Update Database dengan URL Publik Baru
+        // 4. Update Database
+        // Kita simpan Slug Pendek ('booq-erp') DAN URL Panjang ('https://...blob...')
         return this.prisma.project.update({
             where: { id },
             data: {
-                slug: blob.url, // Simpan URL lengkap (https://kukkmn.../sites/nama.html)
+                slug: cleanSlug,      // Untuk akses via lamman.app/s/booq-erp
+                deployUrl: blob.url,  // Source HTML asli
                 isPublished: true
             }
         });
@@ -99,8 +118,17 @@ export class ProjectsService {
     }
   }
 
-  // Method lama (Deprecated)
+  // --- PUBLIC ACCESS (UNTUK PROXY NEXT.JS) ---
+  
   async findPublicBySlug(slug: string): Promise<Project> {
-      throw new NotFoundException('Deprecated. Use direct Blob URL.');
+    const project = await this.prisma.project.findUnique({
+        where: { slug }, // Cari berdasarkan slug pendek
+    });
+
+    if (!project || !project.isPublished) {
+        throw new NotFoundException('Halaman tidak ditemukan atau belum dipublish.');
+    }
+
+    return project;
   }
 }

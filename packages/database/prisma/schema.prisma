@@ -25,6 +25,7 @@ model Project {
   
   // --- FITUR PUBLISH ---
   slug        String?  @unique  // URL unik (misal: "gaji-kilat")
+  deployUrl   String?           // ✅ Simpan "https://kukkmn...html" di sini
   isPublished Boolean  @default(false)
   // ---------------------
 

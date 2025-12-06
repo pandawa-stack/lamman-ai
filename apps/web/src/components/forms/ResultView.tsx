@@ -1,9 +1,9 @@
 // File: apps/web/src/components/forms/ResultView.tsx
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation"; 
-import { useProjectStore } from "@/store/useProjectStore";
+import { useProjectStore } from '@/store/useProjectStore';
 import { Button } from "@/components/ui/button";
 import { Copy, Download, Home, RotateCcw, Save, Loader2, Globe } from "lucide-react";
 import { toast } from 'sonner';
@@ -32,8 +32,16 @@ export function ResultView() {
     const [projectId, setProjectId] = useState<string | null>(null);
     const [slug, setSlug] = useState("");
     const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+    const [origin, setOrigin] = useState("");
 
     const router = useRouter();
+
+    // Ambil origin browser (misal: https://lamman.app) untuk display
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setOrigin(window.location.origin);
+        }
+    }, []);
 
     const handleReset = () => {
         resetProject();
@@ -64,6 +72,11 @@ export function ResultView() {
         toast.success("File HTML diunduh!");
     };
 
+    // --- UTILITY URL BUILDER ---
+    // URL ini mengarah ke Proxy Route di Next.js (apps/web/src/app/s/[slug]/route.ts)
+    const buildPublicUrl = (s: string) => `${origin}/s/${s}`;
+    const displayOrigin = origin ? origin.replace(/^https?:\/\//, "") : "lamman.app";
+
     // 1. LOGIC SIMPAN PROJECT
     const handleSaveProject = async () => {
         if (!brief) return;
@@ -77,9 +90,10 @@ export function ResultView() {
             const savedProject = await saveProjectAgent(payload);
             setProjectId(savedProject.id);
             
-            // Cek apakah project ini sudah punya URL publik (Blob URL)
-            if (savedProject.slug && savedProject.slug.startsWith('http')) {
-                setPublishedUrl(savedProject.slug);
+            // Jika project sudah punya slug, tampilkan linknya
+            if (savedProject.slug) {
+                setSlug(savedProject.slug);
+                setPublishedUrl(buildPublicUrl(savedProject.slug));
             }
 
             toast.success("Project berhasil disimpan ke Database!");
@@ -91,32 +105,35 @@ export function ResultView() {
         }
     };
 
-    // 2. LOGIC PUBLISH PROJECT (Upload ke Blob)
+    // 2. LOGIC PUBLISH PROJECT (Upload ke Blob & Update DB)
     const handlePublish = async () => {
         if (!projectId) {
             toast.error("Harap simpan project terlebih dahulu!");
             return;
         }
         if (!slug) {
-            toast.error("Masukkan nama URL yang diinginkan.");
+            toast.error("Masukkan URL slug yang diinginkan.");
             return;
         }
 
         setIsPublishing(true);
         try {
-            // Backend akan mengupload ke Vercel Blob dan mengembalikan object Project dengan slug baru (Full URL)
+            // Backend akan:
+            // 1. Upload HTML ke Vercel Blob
+            // 2. Simpan URL Blob ke 'deployUrl'
+            // 3. Simpan slug pendek ke 'slug'
+            // 4. Return object project terbaru
             const updatedProject = await publishProjectAgent(projectId, slug);
             
-            // Ambil Full URL dari backend
-            const fullUrl = updatedProject.slug; 
-            setPublishedUrl(fullUrl);
+            // Kita gunakan slug pendek untuk URL publik (Proxy)
+            const fullUrl = buildPublicUrl(updatedProject.slug); 
             
-            toast.success("Landing Page berhasil di-upload dan tayang!");
+            setPublishedUrl(fullUrl);
+            toast.success("Landing Page berhasil tayang!");
         } catch (error: any) {
             const msg = error.response?.data?.message;
             if (msg === 'SLUG_TAKEN') {
-                 // Ini mungkin jarang terjadi di Blob kecuali kita cek duplikasi, tapi tetap aman dihandle
-                toast.error(`Nama '${slug}' bermasalah. Coba nama lain.`);
+                toast.error(`URL '${slug}' sudah dipakai. Coba nama lain.`);
             } else {
                 toast.error("Gagal publish project.");
             }
@@ -151,24 +168,23 @@ export function ResultView() {
                             <DialogHeader>
                                 <DialogTitle>Tayangkan Landing Page</DialogTitle>
                                 <DialogDescription>
-                                    Halaman Anda akan di-hosting secara statis (CDN Tercepat).
+                                    Halaman Anda akan di-hosting secara publik.
                                 </DialogDescription>
                             </DialogHeader>
                             
                             <div className="grid gap-4 py-4">
                                 <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="slug" className="text-right">Nama File</Label>
+                                    <Label htmlFor="slug" className="text-right">URL</Label>
                                     <div className="col-span-3">
                                         <div className="flex items-center space-x-2">
-                                            {/* Label visual saja */}
-                                            <span className="text-sm text-muted-foreground whitespace-nowrap">sites/</span>
+                                            {/* Visualisasi Proxy URL */}
+                                            <span className="text-sm text-muted-foreground whitespace-nowrap">{displayOrigin}/s/</span>
                                             <Input 
                                                 id="slug" 
                                                 value={slug} 
                                                 onChange={(e) => setSlug(e.target.value)} 
                                                 placeholder="nama-halaman" 
                                             />
-                                            <span className="text-sm text-muted-foreground whitespace-nowrap">.html</span>
                                         </div>
                                         <p className="text-[10px] text-muted-foreground mt-1">Hanya huruf kecil, angka, dan strip (-).</p>
                                     </div>
@@ -178,7 +194,7 @@ export function ResultView() {
                             {publishedUrl && (
                                 <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800 break-all">
                                     ✅ Live: 
-                                    <a href={publishedUrl} target="_blank" rel="noopener noreferrer" className="underline font-bold ml-1 block mt-1">
+                                    <a href={publishedUrl} target="_blank" rel="noopener noreferrer" className="underline font-bold ml-1">
                                         {publishedUrl}
                                     </a>
                                 </div>
