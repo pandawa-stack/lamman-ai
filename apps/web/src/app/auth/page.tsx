@@ -81,15 +81,15 @@ export default function AuthPage() {
                         <div className="space-y-4 text-sm text-gray-300 pt-2">
                              <div className="flex items-center gap-3">
                                 <CheckCircle2 size={18} className="text-[#FF9E1B]" />
-                                <span>Loading Super Cepat (High Performance)</span>
+                                <span>Loading Super Cepat</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <CheckCircle2 size={18} className="text-[#FF9E1B]" />
-                                <span>Tanpa Setup Teknis (Zero Configuration)</span>
+                                <span>Tanpa Setup Teknis</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <CheckCircle2 size={18} className="text-[#FF9E1B]" />
-                                <span>Desain Fokus Konversi (Sales-Oriented)</span>
+                                <span>Desain Fokus Konversi</span>
                             </div>
                         </div>
                     </div>
