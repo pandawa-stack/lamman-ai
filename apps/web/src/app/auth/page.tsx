@@ -81,22 +81,22 @@ export default function AuthPage() {
                         <div className="space-y-4 text-sm text-gray-300 pt-2">
                              <div className="flex items-center gap-3">
                                 <CheckCircle2 size={18} className="text-[#FF9E1B]" />
-                                <span>Tanpa Setup Server (Zero Config)</span>
+                                <span>Loading Super Cepat (High Performance)</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <CheckCircle2 size={18} className="text-[#FF9E1B]" />
-                                <span>Loading Super Cepat (Static)</span>
+                                <span>Tanpa Setup Teknis (Zero Configuration)</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <CheckCircle2 size={18} className="text-[#FF9E1B]" />
-                                <span>Fokus Konversi Iklan</span>
+                                <span>Desain Fokus Konversi (Sales-Oriented)</span>
                             </div>
                         </div>
                     </div>
                     
                     {/* Footer Kiri */}
                     <p className="text-xs text-gray-500 relative z-10">
-                        © 2025 Lamman Platform. All rights reserved.
+                        © 2025 Lamman. All rights reserved.
                     </p>
                 </div>
 
