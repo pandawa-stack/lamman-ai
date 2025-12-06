@@ -32,7 +32,7 @@ export class ProjectsService {
       where: { userId },
       orderBy: { updatedAt: 'desc' },
       select: {
-        id: true, name: true, slug: true, isPublished: true, deployUrl: true, // Include deployUrl
+        id: true, name: true, slug: true, isPublished: true, deployUrl: true,
         createdAt: true, updatedAt: true, brief: true, currentStep: true,
       }
     });
@@ -55,7 +55,6 @@ export class ProjectsService {
   // --- FITUR PUBLISH (UPLOAD KE BLOB) ---
 
   async publish(id: string, userId: string, slugInput: string): Promise<Project> {
-    // 1. Ambil Data Project
     const project = await this.prisma.project.findFirst({
         where: { id, userId }
     });
@@ -65,13 +64,11 @@ export class ProjectsService {
     }
 
     if (!project.htmlContent) {
-        throw new BadRequestException('Project belum memiliki konten HTML. Silakan generate dahulu.');
+        throw new BadRequestException('Project belum memiliki konten HTML.');
     }
 
-    // 2. Validasi & Bersihkan Slug
     const cleanSlug = slugInput.toLowerCase().replace(/[^a-z0-9-]/g, '-');
     
-    // Cek apakah slug sudah dipakai orang lain
     const existing = await this.prisma.project.findUnique({
         where: { slug: cleanSlug }
     });
@@ -82,32 +79,29 @@ export class ProjectsService {
 
     const fileName = `sites/${cleanSlug}.html`; 
 
-    // Ambil Token (Prioritas Env Var, Fallback ke hardcoded jika darurat)
-    const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN; 
+    // ✅ FIX: Gunakan Token Hardcoded sebagai Fallback jika Env Var tidak ada
+    const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN || 'vercel_blob_rw_Kukkmn9T7QaVtyTA_KsYHJ9FdkE7flEGbXKSR06ubtlDTfP';
 
     if (!BLOB_TOKEN) {
-        console.error('BLOB_READ_WRITE_TOKEN is missing in .env');
+        console.error('BLOB_READ_WRITE_TOKEN is missing entirely!');
         throw new InternalServerErrorException('Server misconfiguration: Storage token missing.');
     }
 
     try {
-        // 3. Upload ke Vercel Blob
         const blob = await put(fileName, project.htmlContent, {
             access: 'public',
             contentType: 'text/html',
-            addRandomSuffix: false, // Overwrite file jika nama sama
+            addRandomSuffix: false, 
             token: BLOB_TOKEN 
         });
 
-        console.log(`✅ Upload Sukses: ${blob.url}`);
+        console.log(`✅ Upload Sukses ke Vercel Blob: ${blob.url}`);
 
-        // 4. Update Database
-        // Kita simpan Slug Pendek ('booq-erp') DAN URL Panjang ('https://...blob...')
         return this.prisma.project.update({
             where: { id },
             data: {
-                slug: cleanSlug,      // Untuk akses via lamman.app/s/booq-erp
-                deployUrl: blob.url,  // Source HTML asli
+                slug: cleanSlug,      
+                deployUrl: blob.url,  
                 isPublished: true
             }
         });
@@ -117,12 +111,10 @@ export class ProjectsService {
         throw new InternalServerErrorException('Gagal mengupload ke Cloud Storage.');
     }
   }
-
-  // --- PUBLIC ACCESS (UNTUK PROXY NEXT.JS) ---
   
   async findPublicBySlug(slug: string): Promise<Project> {
     const project = await this.prisma.project.findUnique({
-        where: { slug }, // Cari berdasarkan slug pendek
+        where: { slug }, 
     });
 
     if (!project || !project.isPublished) {
