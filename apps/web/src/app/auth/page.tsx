@@ -47,13 +47,13 @@ export default function AuthPage() {
                 
                 {/* Visual / Brand Messaging (Hanya muncul di desktop) */}
                 <div className="hidden md:flex md:w-1/2 bg-[#0EA5E9] p-10 flex-col justify-between text-white">
-                    <Link href="/" className="text-2xl font-bold">Lamman AI</Link>
+                    <Link href="/" className="text-2xl font-bold">lamman</Link>
                     
                     <div className="space-y-4">
                         <Zap className="w-12 h-12 mb-4" />
                         <h2 className="text-3xl font-extrabold">Otomatisasi Landing Page Anda.</h2>
                         <p className="text-sm opacity-80">
-                            Masuk atau daftar untuk mulai membuat halaman web profesional dengan Gemini AI dalam hitungan menit.
+                            Masuk atau daftar untuk mulai membuat landing page profesional dalam hitungan menit.
                         </p>
                     </div>
                     
