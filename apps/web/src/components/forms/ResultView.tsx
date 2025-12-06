@@ -22,10 +22,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// ✅ KONFIGURASI DOMAIN PUBLIK BARU
-const PUBLIC_DOMAIN = "https://lamman.id";
-
 export function ResultView() {
+    // Ambil SEMUA data state untuk disimpan
     const { brief, design, voice, layout, copy, html_output, setStep, resetProject } = useProjectStore();
     const [isSaving, setIsSaving] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
@@ -66,9 +64,6 @@ export function ResultView() {
         toast.success("File HTML diunduh!");
     };
 
-    // --- UTILITY URL BUILDER ---
-    const buildPublicUrl = (s: string) => `${PUBLIC_DOMAIN}/${s}`;
-
     // 1. LOGIC SIMPAN PROJECT
     const handleSaveProject = async () => {
         if (!brief) return;
@@ -80,13 +75,11 @@ export function ResultView() {
             };
 
             const savedProject = await saveProjectAgent(payload);
-            
             setProjectId(savedProject.id);
             
-            // Jika project sudah pernah dipublish sebelumnya
-            if (savedProject.slug) {
-                setSlug(savedProject.slug);
-                setPublishedUrl(buildPublicUrl(savedProject.slug));
+            // Cek apakah project ini sudah punya URL publik (Blob URL)
+            if (savedProject.slug && savedProject.slug.startsWith('http')) {
+                setPublishedUrl(savedProject.slug);
             }
 
             toast.success("Project berhasil disimpan ke Database!");
@@ -98,31 +91,32 @@ export function ResultView() {
         }
     };
 
-    // 2. LOGIC PUBLISH PROJECT (Ke Vercel Blob / External Domain)
+    // 2. LOGIC PUBLISH PROJECT (Upload ke Blob)
     const handlePublish = async () => {
         if (!projectId) {
             toast.error("Harap simpan project terlebih dahulu!");
             return;
         }
         if (!slug) {
-            toast.error("Masukkan URL slug yang diinginkan.");
+            toast.error("Masukkan nama URL yang diinginkan.");
             return;
         }
 
         setIsPublishing(true);
         try {
-            // Backend akan mengupload HTML ke Blob Storage
-            await publishProjectAgent(projectId, slug);
+            // Backend akan mengupload ke Vercel Blob dan mengembalikan object Project dengan slug baru (Full URL)
+            const updatedProject = await publishProjectAgent(projectId, slug);
             
-            // Construct URL ke domain publik baru (lamman.id)
-            const fullUrl = buildPublicUrl(slug); 
+            // Ambil Full URL dari backend
+            const fullUrl = updatedProject.slug; 
             setPublishedUrl(fullUrl);
             
             toast.success("Landing Page berhasil di-upload dan tayang!");
         } catch (error: any) {
             const msg = error.response?.data?.message;
             if (msg === 'SLUG_TAKEN') {
-                toast.error(`URL '${slug}' sudah dipakai. Coba nama lain.`);
+                 // Ini mungkin jarang terjadi di Blob kecuali kita cek duplikasi, tapi tetap aman dihandle
+                toast.error(`Nama '${slug}' bermasalah. Coba nama lain.`);
             } else {
                 toast.error("Gagal publish project.");
             }
@@ -157,23 +151,24 @@ export function ResultView() {
                             <DialogHeader>
                                 <DialogTitle>Tayangkan Landing Page</DialogTitle>
                                 <DialogDescription>
-                                    Halaman Anda akan di-hosting secara statis di domain publik.
+                                    Halaman Anda akan di-hosting secara statis (CDN Tercepat).
                                 </DialogDescription>
                             </DialogHeader>
                             
                             <div className="grid gap-4 py-4">
                                 <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="slug" className="text-right">URL</Label>
+                                    <Label htmlFor="slug" className="text-right">Nama File</Label>
                                     <div className="col-span-3">
                                         <div className="flex items-center space-x-2">
-                                            {/* ✅ Visualisasi Domain Baru */}
-                                            <span className="text-sm text-muted-foreground whitespace-nowrap">lamman.id/</span>
+                                            {/* Label visual saja */}
+                                            <span className="text-sm text-muted-foreground whitespace-nowrap">sites/</span>
                                             <Input 
                                                 id="slug" 
                                                 value={slug} 
                                                 onChange={(e) => setSlug(e.target.value)} 
                                                 placeholder="nama-halaman" 
                                             />
+                                            <span className="text-sm text-muted-foreground whitespace-nowrap">.html</span>
                                         </div>
                                         <p className="text-[10px] text-muted-foreground mt-1">Hanya huruf kecil, angka, dan strip (-).</p>
                                     </div>
@@ -183,7 +178,7 @@ export function ResultView() {
                             {publishedUrl && (
                                 <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800 break-all">
                                     ✅ Live: 
-                                    <a href={publishedUrl} target="_blank" rel="noopener noreferrer" className="underline font-bold ml-1">
+                                    <a href={publishedUrl} target="_blank" rel="noopener noreferrer" className="underline font-bold ml-1 block mt-1">
                                         {publishedUrl}
                                     </a>
                                 </div>
