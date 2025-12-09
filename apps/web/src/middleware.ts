@@ -1,29 +1,32 @@
 // apps/web/src/middleware.ts
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+
+const ALLOWED_EXACT = new Set([
+  "/",
+  "/auth",
+  "/dashboard",
+  "/favicon.ico",
+  "/robots.txt",
+  "/sitemap.xml",
+]);
+
+const ALLOWED_PREFIXES = ["/_next", "/api"];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 1) Allowlist: route yang BOLEH lewat apa adanya
+  // 1) Route yang memang valid → biarkan Next.js handle
   if (
-    pathname === "/" ||
-    pathname === "/auth" ||
-    pathname === "/dashboard" ||
-    pathname.startsWith("/_next") ||
-    pathname === "/favicon.ico" ||
-    pathname === "/robots.txt" ||
-    pathname === "/sitemap.xml" ||
-    pathname.startsWith("/api") // kalau nanti ada API route di web
+    ALLOWED_EXACT.has(pathname) ||
+    ALLOWED_PREFIXES.some((p) => pathname.startsWith(p))
   ) {
     return NextResponse.next();
   }
 
-  // 2) Kalau path 1 level (contoh: /ayam, /bebek, /hanami-house-ok)
-  const segments = pathname.split("/").filter(Boolean); // buang "" dari split
-  if (segments.length === 1) {
-    // Paksa 404 custom HTML ringan (tanpa React, biar simpel & pasti)
-    return new NextResponse(
-      `
+  // 2) Selain itu SEMUA status 404 (termasuk /ayam, /sites/ayam, /s/ayam, dst)
+  return new NextResponse(
+    `
 <!doctype html>
 <html lang="id">
 <head>
@@ -46,11 +49,10 @@ export function middleware(req: NextRequest) {
       404 • Landing Page Tidak Ditemukan
     </p>
     <h1 style="font-size:26px;margin:12px 0 8px;font-weight:700;">
-      URL ini tidak terhubung ke landing page mana pun.
+      URL ini tidak terhubung ke halaman mana pun di Lamman.
     </h1>
     <p style="font-size:14px;color:#9ca3af;margin:0 0 20px;">
-      Kalau Anda mengakses link dari iklan atau broadcast,
-      mungkin landing page-nya sudah dihapus atau belum dipublikasikan.
+      Cek lagi link yang Anda akses, atau kembali ke beranda Lamman.
     </p>
     <a href="/" style="
       display:inline-flex;
@@ -69,22 +71,14 @@ export function middleware(req: NextRequest) {
   </div>
 </body>
 </html>
-      `.trim(),
-      {
-        status: 404,
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-        },
-      },
-    );
-  }
-
-  // 3) Path lain (misal /something/deeper) → biarkan saja,
-  // nanti bisa kamu atur lagi kalau memang ada kebutuhan.
-  return NextResponse.next();
+    `.trim(),
+    {
+      status: 404,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    },
+  );
 }
 
-// Middleware aktif untuk semua path
 export const config = {
   matcher: "/:path*",
 };

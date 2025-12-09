@@ -2,7 +2,7 @@ import axios from 'axios';
 import { Brief, Design, Voice, LandingCopy, Layout } from '@repo/types';
 
 // ✅ STANDARDISASI URL
-const rawBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+const rawBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api-production-042c.up.railway.app';
 const API_BASE_URL = rawBaseUrl.replace(/\/$/, ''); // Hapus slash di akhir jika ada
 const API_URL = `${API_BASE_URL}/ai`; // Endpoint khusus AI
 
